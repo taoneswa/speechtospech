@@ -11,7 +11,7 @@ model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Load the trained model state
-model_save_path = '/content/drive/MyDrive/bruce/dialogue/t5_shona_english_model.pth'
+model_save_path = 't5_shona_english_model.pth'
 model.load_state_dict(torch.load(model_save_path))
 
 # Initialize the speech recognizer
