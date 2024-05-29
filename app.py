@@ -2,11 +2,10 @@ import streamlit as st
 import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForSeq2SeqLM, AutoTokenizer
 import librosa
-import numpy as np
 import nltk
 from nltk.corpus import stopwords
-import soundfile as sf
 from pydub import AudioSegment
+from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode, ClientSettings
 
 # Ensure necessary NLTK data is downloaded
 nltk.download('punkt')
@@ -22,10 +21,8 @@ translation_model.eval()
 
 translation_tokenizer = AutoTokenizer.from_pretrained(tokenizer_save_path)
 
-# Load pre-trained ASR and TTS models
+# Load pre-trained ASR model and processor
 asr_model_name = "facebook/wav2vec2-large-960h"
-tts_model_name = "tts_transformer"  # Placeholder for TTS model
-
 asr_model = Wav2Vec2ForCTC.from_pretrained(asr_model_name)
 asr_processor = Wav2Vec2Processor.from_pretrained(asr_model_name)
 
@@ -36,14 +33,9 @@ def preprocess_text(text):
     tokens = [token for token in tokens if token not in stopwords.words('english')]
     return tokens
 
-# Audio preprocessing function
-def load_audio(file_path):
-    audio, sr = librosa.load(file_path, sr=16000)
-    return audio, sr
-
 # Function to transcribe audio to text
 def transcribe_audio(audio, sr):
-    inputs = asr_processor(audio, return_tensors="pt", sampling_rate=sr)
+    inputs = asr_processor(audio, sampling_rate=sr, return_tensors="pt")
     with torch.no_grad():
         logits = asr_model(**inputs).logits
     predicted_ids = torch.argmax(logits, dim=-1)
@@ -70,8 +62,54 @@ def synthesize_speech(text):
     synthesized_audio = AudioSegment.silent(duration=1000)  # Replace with actual TTS synthesis
     return synthesized_audio
 
+# Define a custom audio processor class for webrtc_streamer
+class AudioProcessor(AudioProcessorBase):
+    def __init__(self) -> None:
+        self.audio_buffer = []
+
+    def recv(self, frame):
+        self.audio_buffer.append(frame.to_ndarray())
+
+    def get_audio(self):
+        return self.audio_buffer
+
 st.title("Speech-to-Speech Translation between Shona and English")
 
+# Audio recording
+st.header("Record Audio")
+webrtc_ctx = webrtc_streamer(
+    key="audio",
+    mode=WebRtcMode.SENDRECV,
+    client_settings=ClientSettings(
+        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+        media_stream_constraints={"audio": True},
+    ),
+    audio_processor_factory=AudioProcessor,
+)
+
+# Process recorded audio
+if webrtc_ctx.state.playing:
+    if st.button("Stop Recording"):
+        audio_processor = webrtc_ctx.audio_processor
+        if audio_processor:
+            audio_buffer = audio_processor.get_audio()
+            audio_data = np.concatenate(audio_buffer)
+            sr = 16000  # Default sample rate for Wav2Vec2
+            transcription = transcribe_audio(audio_data, sr)
+            st.write("Transcribed Text:", transcription)
+            
+            translation = translate_text(transcription, translation_tokenizer, translation_model)
+            st.write("Translated Text:", translation)
+            
+            synthesized_audio = synthesize_speech(translation)
+            
+            synthesized_audio_path = "/tmp/synthesized_recording.wav"
+            synthesized_audio.export(synthesized_audio_path, format="wav")
+            
+            st.audio(synthesized_audio_path, format="audio/wav")
+
+# Audio file upload
+st.header("Upload Audio File")
 uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3"])
 
 if uploaded_file is not None:
@@ -80,7 +118,7 @@ if uploaded_file is not None:
         with open(audio_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         
-        audio, sr = load_audio(audio_path)
+        audio, sr = librosa.load(audio_path, sr=16000)
         transcription = transcribe_audio(audio, sr)
         st.write("Transcribed Text:", transcription)
         
