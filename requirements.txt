@@ -1,8 +1,7 @@
 streamlit
+speechrecognition
+pyaudio
 transformers
 torch
-gtts
 librosa
 nltk
-SpeechRecognition
-pyaudio
