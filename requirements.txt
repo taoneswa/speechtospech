@@ -4,6 +4,4 @@ transformers
 librosa
 nltk
 pydub
-soundfile
 streamlit-webrtc
-numpy
