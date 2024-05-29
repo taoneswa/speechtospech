@@ -1,6 +1,6 @@
 import streamlit as st
 import torch
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForSeq2SeqLM, AutoTokenizer
 import librosa
 import numpy as np
 import nltk
@@ -27,7 +27,7 @@ asr_model_name = "facebook/wav2vec2-large-960h"
 tts_model_name = "tts_transformer"  # Placeholder for TTS model
 
 asr_model = Wav2Vec2ForCTC.from_pretrained(asr_model_name)
-asr_tokenizer = Wav2Vec2Tokenizer.from_pretrained(asr_model_name)
+asr_processor = Wav2Vec2Processor.from_pretrained(asr_model_name)
 
 # Text preprocessing function
 def preprocess_text(text):
@@ -43,11 +43,11 @@ def load_audio(file_path):
 
 # Function to transcribe audio to text
 def transcribe_audio(audio, sr):
-    inputs = asr_tokenizer(audio, return_tensors="pt", sampling_rate=sr)
+    inputs = asr_processor(audio, return_tensors="pt", sampling_rate=sr)
     with torch.no_grad():
         logits = asr_model(**inputs).logits
     predicted_ids = torch.argmax(logits, dim=-1)
-    transcription = asr_tokenizer.batch_decode(predicted_ids)[0]
+    transcription = asr_processor.batch_decode(predicted_ids)[0]
     return transcription
 
 # Function to translate text
