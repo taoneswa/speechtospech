@@ -1,6 +1,6 @@
 import streamlit as st
 import torch
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, Wav2Vec2ForCTC, Wav2Vec2Tokenizer
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer, AutoModelForSeq2SeqLM, AutoTokenizer
 import librosa
 import numpy as np
 import nltk
@@ -13,8 +13,8 @@ nltk.download('punkt')
 nltk.download('stopwords')
 
 # Load the saved translation model and tokenizer
-model_save_path = '/content/drive/MyDrive/bruce/dialogue/t5_shona_english_model.pth'
-tokenizer_save_path = '/content/drive/MyDrive/bruce/dialogue/t5_tokenizer/'
+model_save_path = 't5_shona_english_model.pth'  # Adjust path if needed
+tokenizer_save_path = 't5_tokenizer/'  # Adjust path if needed
 
 translation_model = AutoModelForSeq2SeqLM.from_pretrained('t5-base')
 translation_model.load_state_dict(torch.load(model_save_path, map_location=torch.device('cpu')))
@@ -23,7 +23,7 @@ translation_model.eval()
 translation_tokenizer = AutoTokenizer.from_pretrained(tokenizer_save_path)
 
 # Load pre-trained ASR and TTS models
-asr_model_name = "facebook/wav2vec2-large-960h"  # Example ASR model
+asr_model_name = "facebook/wav2vec2-large-960h"
 tts_model_name = "tts_transformer"  # Placeholder for TTS model
 
 asr_model = Wav2Vec2ForCTC.from_pretrained(asr_model_name)
