@@ -3,5 +3,7 @@ torch
 transformers
 librosa
 nltk
-soundfile
 pydub
+soundfile
+streamlit-webrtc
+numpy
