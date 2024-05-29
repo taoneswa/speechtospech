@@ -10,8 +10,20 @@ from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode, Cl
 import numpy as np
 
 # Ensure necessary NLTK data is downloaded
-nltk.download('punkt')
-nltk.download('stopwords')
+nltk_data_path = os.path.expanduser('~/nltk_data')
+if not os.path.exists(nltk_data_path):
+    os.makedirs(nltk_data_path)
+nltk.data.path.append(nltk_data_path)
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt', download_dir=nltk_data_path)
+
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords', download_dir=nltk_data_path)
 
 # Load the saved translation model and tokenizer
 model_save_path = 't5_shona_english_model.pth'  # Adjust path if needed
