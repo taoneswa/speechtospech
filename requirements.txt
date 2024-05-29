@@ -4,4 +4,3 @@ torch
 gtts
 librosa
 nltk
-pyaudio
