@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForSeq2SeqLM, AutoTokenizer
@@ -6,6 +7,7 @@ import nltk
 from nltk.corpus import stopwords
 from pydub import AudioSegment
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode, ClientSettings
+import numpy as np
 
 # Ensure necessary NLTK data is downloaded
 nltk.download('punkt')
