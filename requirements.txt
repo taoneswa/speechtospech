@@ -5,3 +5,4 @@ gtts
 librosa
 nltk
 SpeechRecognition
+PyAudio
