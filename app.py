@@ -6,7 +6,7 @@ import librosa
 import nltk
 from nltk.corpus import stopwords
 from pydub import AudioSegment
-from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode, ClientSettings
+from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 import numpy as np
 
 # Ensure necessary NLTK data is downloaded
@@ -94,11 +94,8 @@ st.header("Record Audio")
 webrtc_ctx = webrtc_streamer(
     key="audio",
     mode=WebRtcMode.SENDRECV,
-    client_settings=ClientSettings(
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={"audio": True},
-    ),
-    audio_processor_factory=AudioProcessor,
+    rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+    media_stream_constraints={"audio": True}
 )
 
 # Process recorded audio
@@ -107,20 +104,21 @@ if webrtc_ctx.state.playing:
         audio_processor = webrtc_ctx.audio_processor
         if audio_processor:
             audio_buffer = audio_processor.get_audio()
-            audio_data = np.concatenate(audio_buffer)
-            sr = 16000  # Default sample rate for Wav2Vec2
-            transcription = transcribe_audio(audio_data, sr)
-            st.write("Transcribed Text:", transcription)
-            
-            translation = translate_text(transcription, translation_tokenizer, translation_model)
-            st.write("Translated Text:", translation)
-            
-            synthesized_audio = synthesize_speech(translation)
-            
-            synthesized_audio_path = "/tmp/synthesized_recording.wav"
-            synthesized_audio.export(synthesized_audio_path, format="wav")
-            
-            st.audio(synthesized_audio_path, format="audio/wav")
+            if audio_buffer:
+                audio_data = np.concatenate(audio_buffer)
+                sr = 16000  # Default sample rate for Wav2Vec2
+                transcription = transcribe_audio(audio_data, sr)
+                st.write("Transcribed Text:", transcription)
+                
+                translation = translate_text(transcription, translation_tokenizer, translation_model)
+                st.write("Translated Text:", translation)
+                
+                synthesized_audio = synthesize_speech(translation)
+                
+                synthesized_audio_path = "/tmp/synthesized_recording.wav"
+                synthesized_audio.export(synthesized_audio_path, format="wav")
+                
+                st.audio(synthesized_audio_path, format="audio/wav")
 
 # Audio file upload
 st.header("Upload Audio File")
