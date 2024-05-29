@@ -1,8 +1,7 @@
-streamlit
-speechrecognition
-transformers
-torch
-gtts
-librosa
-nltk
-pyaudio
+streamlit==1.35.0
+transformers==4.12.3
+torch==1.10.0
+gtts==2.2.3
+librosa==0.8.1
+nltk==3.6.7
+pyaudio==0.2.11
