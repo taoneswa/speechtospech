@@ -5,4 +5,4 @@ gtts
 librosa
 nltk
 SpeechRecognition
-portaudio-bin
+pyaudio
