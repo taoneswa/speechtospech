@@ -1,57 +1,61 @@
-import os
 import streamlit as st
+import speech_recognition as sr
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import torch
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor, AutoModelForSeq2SeqLM, AutoTokenizer
-import librosa
-import logging
+from gtts import gTTS
+import os
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Load the model and tokenizer
+model_name = 't5-base'
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-# Load the translation model
-model_save_path = 't5_shona_english_model.pth'  # Adjust path if needed
-tokenizer_save_path = 't5_tokenizer/'  # Adjust path if needed
+# Load the trained model state
+model_save_path = '/content/drive/MyDrive/bruce/dialogue/t5_shona_english_model.pth'
+model.load_state_dict(torch.load(model_save_path))
 
-translation_model = AutoModelForSeq2SeqLM.from_pretrained('t5-base')
-translation_model.load_state_dict(torch.load(model_save_path, map_location=torch.device('cpu')))
-translation_model.eval()
-logging.info("Translation model loaded successfully")
+# Initialize the speech recognizer
+recognizer = sr.Recognizer()
 
-translation_tokenizer = AutoTokenizer.from_pretrained(tokenizer_save_path)
-logging.info("Translation tokenizer loaded successfully")
+# Function to translate text
+def translate_text(text, src_lang, tgt_lang):
+    input_text = f"translate {src_lang} to {tgt_lang}: {text}"
+    inputs = tokenizer.encode(input_text, return_tensors="pt")
+    outputs = model.generate(inputs)
+    decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return decoded
 
-# Load ASR model and processor
-asr_model_name = "facebook/wav2vec2-large-960h"
-asr_model = Wav2Vec2ForCTC.from_pretrained(asr_model_name)
-asr_processor = Wav2Vec2Processor.from_pretrained(asr_model_name)
-logging.info("ASR model and processor loaded successfully")
+# Streamlit UI
+st.title("Live Speech Translation")
 
-st.title("Speech-to-Speech Translation App")
+# Selection for source and target languages
+src_lang = st.selectbox("Select source language", ["English", "Shona"])
+tgt_lang = "Shona" if src_lang == "English" else "English"
 
-# Audio file upload
-st.header("Upload Audio File")
-uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3"])
+st.write(f"Translating from {src_lang} to {tgt_lang}")
 
-if uploaded_file is not None:
-    try:
-        audio_path = f"/tmp/{uploaded_file.name}"
-        with open(audio_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        
-        audio, sr = librosa.load(audio_path, sr=16000)
-        st.write("Audio loaded successfully")
+if st.button("Start Recording"):
+    with sr.Microphone() as source:
+        st.write("Listening...")
+        audio = recognizer.listen(source)
+        st.write("Processing...")
 
-        # Transcription and translation placeholder
-        st.write("Transcribing and translating...")
+        try:
+            # Recognize speech using Google Speech Recognition
+            speech_text = recognizer.recognize_google(audio)
+            st.write(f"Recognized text: {speech_text}")
 
-        # Placeholder for transcription and translation
-        transcription = "example transcription"
-        translation = "example translation"
+            # Translate the text
+            translated_text = translate_text(speech_text, src_lang.lower(), tgt_lang.lower())
+            st.write(f"Translated text: {translated_text}")
 
-        st.write("Transcribed Text:", transcription)
-        st.write("Translated Text:", translation)
+            # Convert translated text to speech
+            tts = gTTS(translated_text, lang='sn' if tgt_lang == 'Shona' else 'en')
+            tts.save("translated_audio.mp3")
+            os.system("start translated_audio.mp3")  # Adjust this line based on your OS
 
-        logging.info("Transcription and translation completed successfully")
-    except Exception as e:
-        st.error(f"Error processing the file: {e}")
-        logging.error(f"Error processing the file: {e}")
+        except sr.UnknownValueError:
+            st.write("Could not understand audio")
+        except sr.RequestError as e:
+            st.write(f"Could not request results; {e}")
+
