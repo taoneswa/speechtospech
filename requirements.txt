@@ -1,7 +1,7 @@
 streamlit
-torch
+speechrecognition
 transformers
+torch
+gtts
 librosa
 nltk
-pydub
-streamlit-webrtc
