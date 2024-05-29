@@ -4,3 +4,4 @@ torch
 gtts
 librosa
 nltk
+SpeechRecognition
